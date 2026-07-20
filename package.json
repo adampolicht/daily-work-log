@@ -1,0 +1,12 @@
+{
+  "name": "daily-work-log",
+  "version": "1.0.0",
+  "description": "Daily work log — end-of-day popup",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

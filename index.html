@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Work Log</title>
+  <link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+  <div class="toolbar">
+    <span class="drag-region"></span>
+    <span id="date-label"></span>
+    <span class="spacer"></span>
+    <button id="btn-folder" title="Open WorkLog folder">📂</button>
+    <button id="btn-toggle-sidebar" title="Toggle activity">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="9.5" y1="1.5" x2="9.5" y2="12.5" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="main">
+    <textarea
+      id="note"
+      placeholder="What did you do today?"
+      spellcheck="true"
+      autofocus
+    ></textarea>
+
+    <aside class="activity-panel" id="activity-panel">
+      <div class="activity-header">Today's activity</div>
+      <div id="activity-content" class="activity-loading">Loading…</div>
+    </aside>
+  </div>
+
+  <div class="footer">
+    <span id="save-status"></span>
+    <button id="btn-save">Save &amp; Close</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

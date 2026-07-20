@@ -1,0 +1,255 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font-size: 14px;
+  background: #1c1c1e;
+  color: #ffffff;
+  color-scheme: dark;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  height: 40px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.drag-region {
+  width: 72px;
+  flex-shrink: 0;
+}
+
+#date-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.01em;
+  -webkit-app-region: no-drag;
+}
+
+.spacer { flex: 1; }
+
+#btn-folder {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 17px;
+  color: rgba(255,255,255,0.55);
+  padding: 4px 6px;
+  border-radius: 5px;
+  line-height: 1;
+  transition: background 0.12s;
+}
+#btn-folder:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* ── Main area ────────────────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Textarea ─────────────────────────────────────────────────────────────── */
+#note {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 12px 20px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  background: transparent;
+  color-scheme: dark;
+  -webkit-appearance: none;
+  user-select: text;
+  -webkit-app-region: no-drag;
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+
+#note::placeholder {
+  color: rgba(255,255,255,0.3);
+  -webkit-text-fill-color: rgba(255,255,255,0.3);
+}
+
+/* ── Activity sidebar ─────────────────────────────────────────────────────── */
+.activity-panel {
+  width: 200px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 14px 12px;
+  -webkit-app-region: no-drag;
+  user-select: text;
+  transition: width 0.2s ease, padding 0.2s ease;
+}
+
+.activity-panel.collapsed {
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── Sidebar toggle button (toolbar) ──────────────────────────────────────── */
+#btn-toggle-sidebar {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.45);
+  padding: 4px 5px;
+  border-radius: 5px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  margin-left: 4px;
+}
+#btn-toggle-sidebar:hover { background: rgba(255,255,255,0.12); color: #fff; }
+#btn-toggle-sidebar.active { color: #fff; background: rgba(255,255,255,0.1); }
+
+.activity-panel {
+  border-left: 1px solid rgba(255,255,255,0.07);
+}
+
+.activity-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 10px;
+  white-space: nowrap;
+}
+
+.activity-loading {
+  font-size: 12px;
+  color: rgba(255,255,255,0.25);
+}
+
+.activity-section {
+  margin-bottom: 14px;
+}
+
+.activity-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 6px;
+}
+
+.activity-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.activity-name {
+  font-size: 12px;
+  color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+.activity-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.activity-domain-row {
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.activity-domain {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-empty {
+  font-size: 12px;
+  color: rgba(255,255,255,0.2);
+  font-style: italic;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 14px;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #2a2a2d;
+  -webkit-app-region: no-drag;
+}
+
+#save-status {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  min-width: 100px;
+  transition: opacity 0.3s;
+}
+
+#save-status.flash {
+  color: #27ae60;
+  font-weight: 500;
+}
+
+#btn-save {
+  background: #007AFF;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+#btn-save:hover  { background: #0062cc; }
+#btn-save:active { transform: scale(0.97); }

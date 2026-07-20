@@ -1,0 +1,7 @@
+node_modules/
+*.md
+!README.md
+.figma-sessions.json
+/tmp/
+*.log
+*.err

@@ -1,0 +1,30 @@
+{
+  "apps": [
+    "com.lilithgame.roc.ios",
+    "com.spotify.client",
+    "com.apple.finder",
+    "com.apple.systempreferences",
+    "com.apple.Safari",
+    "com.apple.dock",
+    "net.whatsapp.WhatsApp",
+    "com.hnc.Discord"
+  ],
+  "domains": [
+    "youtube.com",
+    "facebook.com",
+    "instagram.com",
+    "twitter.com",
+    "x.com",
+    "reddit.com",
+    "tiermaker.com",
+    "tiktok.com",
+    "netflix.com",
+    "twitch.tv",
+    "pornhub.com",
+    "google.com",
+    "filmweb.pl",
+    "allegro.pl",
+    "imdb.com",
+    "discord.com"
+  ]
+}
