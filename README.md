@@ -6,14 +6,14 @@ Notes are saved as plain Markdown files in `~/Documents/WorkLog/YYYY-MM-DD.md`.
 
 ## Features
 
-- Lives in the menu bar as **✎** — no Dock icon
+- Lives in the menu bar as **✎** - no Dock icon
 - Auto-popup at 16:45 on weekdays
 - Notes stored as plain `.md` files, one per day
 - Auto-saves while you type (2s debounce); empty notes are never written to disk
 - **Cmd+S** to save, **Cmd+W** or **Esc** to save and hide
 - Each day opens a fresh note; reopening the same day picks up where you left off
 - Starts automatically at login via LaunchAgent
-- **Activity sidebar** — shows today's app usage and visited sites pulled from macOS Screen Time data and browser history
+- **Activity sidebar** - shows today's app usage and visited sites pulled from macOS Screen Time data and browser history
   - Figma project names tracked via AppleScript (polled every 30 min)
   - Opera GX history parsed for work-relevant domains
   - Configurable blocklist (`blocklist.json`) to hide non-work apps and sites
