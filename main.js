@@ -62,7 +62,10 @@ function createWindow() {
 
 function showWindow() {
   if (!win) createWindow()
-  else       win.show()
+  else {
+    win.show()
+    win.webContents.send('refresh')
+  }
   win.focus()
 }
 
@@ -121,6 +124,7 @@ ipcMain.handle('load-note', (_e, key) => {
 })
 
 ipcMain.handle('save-note', (_e, key, text) => {
+  if (!text.trim()) return true
   ensureNotesDir()
   fs.writeFileSync(notePath(key), text, 'utf8')
   return true

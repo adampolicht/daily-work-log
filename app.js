@@ -169,6 +169,12 @@ async function loadActivity() {
   }
 }
 
+// ── Refresh on reopen (date may have changed since last open) ─────────────────
+window.worklog.onRefresh(() => {
+  currentKey = todayKey()
+  init()
+})
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 init()
 loadActivity()

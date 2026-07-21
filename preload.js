@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('worklog', {
   openFolder: ()         => ipcRenderer.invoke('open-folder'),
   hide:        ()         => ipcRenderer.invoke('hide-window'),
   getActivity: ()         => ipcRenderer.invoke('get-activity'),
+  onRefresh:  cb         => ipcRenderer.on('refresh', cb),
 })
