@@ -173,6 +173,7 @@ async function loadActivity() {
 window.worklog.onRefresh(() => {
   currentKey = todayKey()
   init()
+  loadActivity()
 })
 
 // ── Start ─────────────────────────────────────────────────────────────────────
