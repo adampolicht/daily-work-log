@@ -17,13 +17,13 @@ Notes are saved as plain Markdown files in `~/Documents/WorkLog/YYYY-MM-DD.md`.
   - Figma project names tracked via AppleScript (polled every 30 min)
   - Opera GX history parsed for work-relevant domains
   - Configurable blocklist (`blocklist.json`) to hide non-work apps and sites
-  - Sidebar toggled via button in toolbar — state persists between sessions
+  - Sidebar toggled via button in toolbar - state persists between sessions
 
 ## Requirements
 
 - macOS 12+
 - Node.js (`brew install node`)
-- Full Disk Access granted to iTerm (or whichever terminal you use) — needed to read Screen Time data
+- Full Disk Access granted to iTerm (or whichever terminal you use) - needed to read Screen Time data
 
 ## Setup
 
@@ -85,7 +85,7 @@ Figma session history (for the sidebar) is stored in `~/Documents/WorkLog/.figma
 
 ## Blocklist
 
-Edit `blocklist.json` to control what appears in the activity sidebar. Changes take effect immediately on next window open — no restart needed.
+Edit `blocklist.json` to control what appears in the activity sidebar. Changes take effect immediately on next window open - no restart needed.
 
 ```json
 {
