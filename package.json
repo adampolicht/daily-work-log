@@ -4,9 +4,37 @@
   "description": "Daily work log — end-of-day popup",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --mac --arm64",
+    "deploy": "npm run dist && cp dist_app/mac-arm64/Worklog.app/Contents/Resources/app.asar /Applications/Worklog.app/Contents/Resources/app.asar && pkill -f 'Contents/MacOS/Worklog' 2>/dev/null; sleep 1; launchctl kickstart -k 'gui/'$(id -u)'/com.worklog.app' && echo 'deployed'"
+  },
+  "build": {
+    "appId": "com.worklog.app",
+    "productName": "Worklog",
+    "directories": {
+      "output": "dist_app"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "activity.js",
+      "app.js",
+      "weekly.js",
+      "index.html",
+      "style.css",
+      "blocklist.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dir",
+      "identity": null,
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    }
   },
   "devDependencies": {
-    "electron": "^31.0.0"
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
   }
 }
