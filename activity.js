@@ -116,47 +116,46 @@ function getBrowserDomains(blocklist) {
 
 // ── Figma project tracking ────────────────────────────────────────────────────
 
-const FIGMA_LOG = path.join(os.homedir(), 'Documents', 'WorkLog', '.figma-sessions.json')
+const FIGMA_LOG      = path.join(os.homedir(), 'Documents', 'WorkLog', '.figma-sessions.json')
+const FIGMA_SETTINGS = path.join(os.homedir(), 'Library', 'Application Support', 'Figma', 'settings.json')
 
-function getFigmaWindowTitles() {
+function isFigmaRunning() {
   try {
-    const script = `
-      tell application "System Events"
-        if exists process "Figma" then
-          tell process "Figma"
-            return name of every window
-          end tell
-        end if
-      end tell`
-    const out = execFileSync('osascript', ['-e', script], { encoding: 'utf8', timeout: 3000 }).trim()
-    if (!out || out === 'missing value') return []
-    return out.split(', ').map(s => s.trim()).filter(Boolean)
+    execFileSync('pgrep', ['-x', 'Figma'], { encoding: 'utf8', timeout: 1000 })
+    return true
   } catch {
-    return []
+    return false
   }
 }
 
-function getFrontFigmaWindow() {
+// Returns { all: [title, ...], active: title|null } from Figma's settings.json
+// No Accessibility permission needed — reads a plain JSON file.
+function getOpenFigmaTabs() {
   try {
-    const script = `
-      tell application "System Events"
-        try
-          set fp to name of first process whose frontmost is true
-          if fp is "Figma" then
-            tell process "Figma"
-              return name of front window
-            end tell
-          end if
-        end try
-      end tell`
-    const out = execFileSync('osascript', ['-e', script], { encoding: 'utf8', timeout: 3000 }).trim()
-    return (out && out !== 'missing value') ? out : null
+    const settings = JSON.parse(fs.readFileSync(FIGMA_SETTINGS, 'utf8'))
+    if (!Array.isArray(settings.windows)) return { all: [], active: null }
+
+    const allSet = new Set()
+    let active = null
+
+    for (const win of settings.windows) {
+      const tabs = (win.tabs || []).filter(t => t.title && !t.isDiscarded)
+      for (const tab of tabs) allSet.add(tab.title)
+      if (win.activeTabPath && !active) {
+        const hit = tabs.find(t => t.path === win.activeTabPath)
+        if (hit) active = hit.title
+      }
+    }
+
+    return { all: [...allSet], active }
   } catch {
-    return null
+    return { all: [], active: null }
   }
 }
 
 function recordFigmaSessions() {
+  if (!isFigmaRunning()) return
+
   const today = todayLocal()
   let log = {}
   try { log = JSON.parse(fs.readFileSync(FIGMA_LOG, 'utf8')) } catch {}
@@ -172,14 +171,15 @@ function recordFigmaSessions() {
   if (!log[today]) log[today] = {}
 
   const now = new Date().toISOString()
-  for (const title of getFigmaWindowTitles()) {
+  const { all, active } = getOpenFigmaTabs()
+
+  for (const title of all) {
     if (!log[today][title]) log[today][title] = { mins: 0, first_seen: now }
   }
 
-  const focused = getFrontFigmaWindow()
-  if (focused) {
-    if (!log[today][focused]) log[today][focused] = { mins: 0, first_seen: now }
-    log[today][focused].mins += 1
+  if (active) {
+    if (!log[today][active]) log[today][active] = { mins: 0, first_seen: now }
+    log[today][active].mins += 1
   }
 
   fs.writeFileSync(FIGMA_LOG, JSON.stringify(log, null, 2), 'utf8')
@@ -194,20 +194,22 @@ function getFigmaProjects() {
     const day = log[today]
     if (day && !Array.isArray(day)) {
       for (const [title, data] of Object.entries(day)) {
-        if (title && title !== 'missing value') map.set(title, data.mins || 0)
+        if (title) map.set(title, data.mins || 0)
       }
     } else if (Array.isArray(day)) {
       for (const e of day) {
-        if (e.title && e.title !== 'missing value') map.set(e.title, 0)
+        if (e.title) map.set(e.title, 0)
       }
     }
   } catch {}
 
-  for (const title of getFigmaWindowTitles()) {
-    if (title && !map.has(title)) map.set(title, 0)
+  if (isFigmaRunning()) {
+    for (const title of getOpenFigmaTabs().all) {
+      if (!map.has(title)) map.set(title, 0)
+    }
   }
 
-  // parse browser history for figma.com/design/ file names (last 2 days)
+  // browser history fallback for figma.com opened in browser
   const tmp = path.join(os.tmpdir(), 'worklog_opera_figma.db')
   try {
     fs.copyFileSync(OPERA_HISTORY, tmp)
@@ -228,7 +230,6 @@ function getFigmaProjects() {
 
   return [...map.entries()]
     .map(([title, mins]) => ({ title, mins }))
-    .filter(e => e.title && e.title !== 'missing value')
     .sort((a, b) => b.mins - a.mins)
 }
 
