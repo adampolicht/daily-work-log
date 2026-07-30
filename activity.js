@@ -136,20 +136,50 @@ function getFigmaWindowTitles() {
   }
 }
 
-function recordFigmaSessions() {
-  const titles = getFigmaWindowTitles()
-  if (!titles.length) return
+function getFrontFigmaWindow() {
+  try {
+    const script = `
+      tell application "System Events"
+        try
+          set fp to name of first process whose frontmost is true
+          if fp is "Figma" then
+            tell process "Figma"
+              return name of front window
+            end tell
+          end if
+        end try
+      end tell`
+    const out = execFileSync('osascript', ['-e', script], { encoding: 'utf8', timeout: 3000 }).trim()
+    return (out && out !== 'missing value') ? out : null
+  } catch {
+    return null
+  }
+}
 
+function recordFigmaSessions() {
   const today = todayLocal()
   let log = {}
   try { log = JSON.parse(fs.readFileSync(FIGMA_LOG, 'utf8')) } catch {}
 
-  if (!log[today]) log[today] = []
-  const now = new Date().toISOString()
-  for (const title of titles) {
-    if (!log[today].find(e => e.title === title)) {
-      log[today].push({ title, first_seen: now })
+  // migrate old array format → object
+  if (Array.isArray(log[today])) {
+    const old = log[today]
+    log[today] = {}
+    for (const e of old) {
+      if (e.title) log[today][e.title] = { mins: 0, first_seen: e.first_seen }
     }
+  }
+  if (!log[today]) log[today] = {}
+
+  const now = new Date().toISOString()
+  for (const title of getFigmaWindowTitles()) {
+    if (!log[today][title]) log[today][title] = { mins: 0, first_seen: now }
+  }
+
+  const focused = getFrontFigmaWindow()
+  if (focused) {
+    if (!log[today][focused]) log[today][focused] = { mins: 0, first_seen: now }
+    log[today][focused].mins += 1
   }
 
   fs.writeFileSync(FIGMA_LOG, JSON.stringify(log, null, 2), 'utf8')
@@ -157,15 +187,27 @@ function recordFigmaSessions() {
 
 function getFigmaProjects() {
   const today = todayLocal()
-  const titles = new Set(getFigmaWindowTitles())
+  const map = new Map()
 
-  // Also load persisted sessions from today
   try {
     const log = JSON.parse(fs.readFileSync(FIGMA_LOG, 'utf8'))
-    for (const entry of (log[today] || [])) titles.add(entry.title)
+    const day = log[today]
+    if (day && !Array.isArray(day)) {
+      for (const [title, data] of Object.entries(day)) {
+        if (title && title !== 'missing value') map.set(title, data.mins || 0)
+      }
+    } else if (Array.isArray(day)) {
+      for (const e of day) {
+        if (e.title && e.title !== 'missing value') map.set(e.title, 0)
+      }
+    }
   } catch {}
 
-  // Parse browser history for figma.com/design/ file names (last 2 days)
+  for (const title of getFigmaWindowTitles()) {
+    if (title && !map.has(title)) map.set(title, 0)
+  }
+
+  // parse browser history for figma.com/design/ file names (last 2 days)
   const tmp = path.join(os.tmpdir(), 'worklog_opera_figma.db')
   try {
     fs.copyFileSync(OPERA_HISTORY, tmp)
@@ -179,12 +221,15 @@ function getFigmaProjects() {
       const m = url.match(/figma\.com\/(?:design|file)\/[A-Za-z0-9_-]+\/([^"?&#\s]{2,80})/)
       if (m) {
         const name = decodeURIComponent(m[1]).replace(/-/g, ' ')
-        titles.add(name)
+        if (!map.has(name)) map.set(name, 0)
       }
     }
   } catch {}
 
-  return [...titles].filter(t => t && t !== 'missing value')
+  return [...map.entries()]
+    .map(([title, mins]) => ({ title, mins }))
+    .filter(e => e.title && e.title !== 'missing value')
+    .sort((a, b) => b.mins - a.mins)
 }
 
 function getActivity() {

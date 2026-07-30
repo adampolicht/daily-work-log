@@ -1,8 +1,9 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, shell, nativeImage, nativeTheme } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, shell, nativeImage, nativeTheme, dialog } = require('electron')
 const path = require('path')
 const fs   = require('fs')
 const os   = require('os')
 const { getActivity, recordFigmaSessions } = require('./activity')
+const { generateWeeklySummary } = require('./weekly')
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const POPUP_HOUR   = 16
@@ -69,6 +70,21 @@ function showWindow() {
   win.focus()
 }
 
+// ── Weekly summary ────────────────────────────────────────────────────────────
+async function runWeeklySummary() {
+  try {
+    const outPath = await generateWeeklySummary()
+    shell.openPath(outPath)
+  } catch (err) {
+    dialog.showMessageBox({
+      type: 'error',
+      title: 'Weekly Summary',
+      message: 'Failed to generate summary',
+      detail: err.message,
+    })
+  }
+}
+
 // ── Tray icon ────────────────────────────────────────────────────────────────
 function buildTray() {
   // On macOS we use a template image (inverts with dark/light mode).
@@ -80,6 +96,8 @@ function buildTray() {
 
   const menu = Menu.buildFromTemplate([
     { label: "Open today's note",  click: showWindow },
+    { type: 'separator' },
+    { label: 'Generate weekly summary', click: runWeeklySummary },
     { type: 'separator' },
     { label: 'Open WorkLog folder', click: () => shell.openPath(NOTES_DIR) },
     { type: 'separator' },
@@ -152,9 +170,9 @@ app.whenReady().then(() => {
   buildTray()
   schedulePopup()
   showWindow()
-  // Poll Figma window titles every 30 min to build daily history
+  // Poll Figma every minute: track which project is in focus (+1 min each tick)
   recordFigmaSessions()
-  setInterval(recordFigmaSessions, 30 * 60 * 1000)
+  setInterval(recordFigmaSessions, 60 * 1000)
 })
 
 app.on('window-all-closed', e => e.preventDefault())  // keep alive in background

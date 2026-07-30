@@ -126,11 +126,19 @@ async function loadActivity() {
     if (figma && figma.length) {
       html += '<div class="activity-section">'
       html += '<div class="activity-section-title">Figma</div>'
-      figma.forEach(name => {
-        html += `<div class="activity-domain-row">
-          <span class="activity-dot" style="background:#a259ff"></span>
-          <span class="activity-domain">${name}</span>
-        </div>`
+      figma.forEach(({ title, mins }) => {
+        const label = title.length > 20 ? title.slice(0, 19) + '…' : title
+        if (mins > 0) {
+          html += `<div class="activity-row">
+            <span class="activity-name" style="color:#a259ff">${label}</span>
+            <span class="activity-time">${formatMins(mins)}</span>
+          </div>`
+        } else {
+          html += `<div class="activity-domain-row">
+            <span class="activity-dot" style="background:#a259ff"></span>
+            <span class="activity-domain">${label}</span>
+          </div>`
+        }
       })
       html += '</div>'
     }
