@@ -1,4 +1,7 @@
 node_modules/
+dist_app/
+.env
+.DS_Store
 *.md
 !README.md
 .figma-sessions.json

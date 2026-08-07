@@ -14,6 +14,7 @@ const APP_NAMES = {
   'com.tinyspeck.slackmacgap': 'Slack',
   'com.microsoft.VSCode':      'VS Code',
   'com.googlecode.iterm2':     'iTerm',
+  'com.mitchellh.ghostty':     'Ghostty',
   'com.operasoftware.OperaGX': 'Opera GX',
   'com.apple.Notes':           'Notatki',
   'com.github.Electron':       'Worklog',
