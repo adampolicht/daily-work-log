@@ -258,4 +258,11 @@ async function generateWeeklySummary(targetDate = new Date()) {
   return outPath
 }
 
-module.exports = { generateWeeklySummary }
+// Path of the weekly report file for a given date (no side effects).
+function weeklyPathFor(targetDate = new Date()) {
+  const week = isoWeek(targetDate)
+  const year = targetDate.getFullYear()
+  return path.join(WEEKLY_DIR, `${year}-W${String(week).padStart(2, '0')}.md`)
+}
+
+module.exports = { generateWeeklySummary, weeklyPathFor }

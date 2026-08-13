@@ -3,12 +3,15 @@ const path = require('path')
 const fs   = require('fs')
 const os   = require('os')
 const { getActivity, recordFigmaSessions } = require('./activity')
-const { generateWeeklySummary } = require('./weekly')
+const { generateWeeklySummary, weeklyPathFor } = require('./weekly')
 
 // ── Config ──────────────────────────────────────────────────────────────────
-const POPUP_HOUR   = 16
-const POPUP_MINUTE = 45
-const NOTES_DIR    = path.join(os.homedir(), 'Documents', 'WorkLog')
+const POPUP_HOUR    = 16
+const POPUP_MINUTE  = 45
+const WEEKLY_DAY    = 5   // Friday
+const WEEKLY_HOUR   = 17
+const WEEKLY_MINUTE = 0
+const NOTES_DIR     = path.join(os.homedir(), 'Documents', 'WorkLog')
 
 // ── State ────────────────────────────────────────────────────────────────────
 let win  = null
@@ -85,6 +88,21 @@ async function runWeeklySummary() {
   }
 }
 
+// Silent auto-trigger: generate this week's report only if it doesn't exist yet.
+// No window, no dialog — errors are logged and swallowed so the app stays quiet.
+async function runWeeklySummarySilent() {
+  try {
+    if (fs.existsSync(weeklyPathFor())) {
+      console.log('Weekly summary already exists, skipping auto-generation')
+      return
+    }
+    const outPath = await generateWeeklySummary()
+    console.log(`Weekly summary auto-generated: ${outPath}`)
+  } catch (err) {
+    console.error(`Weekly summary auto-generation failed: ${err.message}`)
+  }
+}
+
 // ── Tray icon ────────────────────────────────────────────────────────────────
 function buildTray() {
   // On macOS we use a template image (inverts with dark/light mode).
@@ -135,6 +153,44 @@ function schedulePopup() {
   }, delay)
 }
 
+function msUntilNextWeekly() {
+  const now  = new Date()
+  const next = new Date(now)
+  next.setHours(WEEKLY_HOUR, WEEKLY_MINUTE, 0, 0)
+
+  // advance to the next WEEKLY_DAY; if it's already today but past the time,
+  // roll a full week forward
+  let add = (WEEKLY_DAY - next.getDay() + 7) % 7
+  if (add === 0 && next <= now) add = 7
+  next.setDate(next.getDate() + add)
+
+  return next - now
+}
+
+function scheduleWeekly() {
+  const delay = msUntilNextWeekly()
+  const hrs   = Math.round(delay / 3600000)
+  console.log(`Next weekly summary in ~${hrs} h`)
+
+  setTimeout(() => {
+    runWeeklySummarySilent()
+    scheduleWeekly()   // reschedule for the following week
+  }, delay)
+}
+
+// Catch-up: if the Fri 17:00 trigger was missed (Mac asleep / app not running),
+// generate on launch when we're already past this week's slot.
+function weeklyCatchUp() {
+  const now = new Date()
+  const day = now.getDay()
+  const pastFridaySlot =
+    day === WEEKLY_DAY &&
+    (now.getHours() > WEEKLY_HOUR ||
+      (now.getHours() === WEEKLY_HOUR && now.getMinutes() >= WEEKLY_MINUTE))
+  const isWeekend = day === 6 || day === 0
+  if (pastFridaySlot || isWeekend) runWeeklySummarySilent()
+}
+
 // ── IPC handlers ─────────────────────────────────────────────────────────────
 ipcMain.handle('load-note', (_e, key) => {
   const p = notePath(key)
@@ -169,6 +225,8 @@ app.whenReady().then(() => {
   ensureNotesDir()
   buildTray()
   schedulePopup()
+  scheduleWeekly()
+  weeklyCatchUp()
   showWindow()
   // Poll Figma every minute: track which project is in focus (+1 min each tick)
   recordFigmaSessions()
