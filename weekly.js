@@ -138,6 +138,7 @@ Rules:
 - Normalize client names — fix typos, resolve abbreviations to the full canonical form. Example mappings: "Celler" → "Cellier", "M2" → "Memory²", "Memory2" → "Memory²", "Noba" → "NOBA"
 - If a new client name appears that you haven't seen before, include it as-is (do not drop it)
 - Translate all descriptions to concise, professional English
+- When a description covers several distinct tasks, separate them with " & " rather than commas or the word "and" (e.g. "Promo codes & AB social media templates & status meeting")
 - If an explicit time is written (e.g. "3h", "45min", "(1h)"), extract it as-is
 - If no time is specified, use "?"
 - Never invent or estimate times
@@ -186,13 +187,29 @@ function renderMarkdown(data, dates, year, week, rawNotes) {
     let knownMins  = 0
     let hasUnknown = false
 
+    // Group entries by client so one project's tasks share a single row,
+    // with the tasks joined by " & " and their times summed.
+    const groups   = []   // preserves first-seen client order
+    const byClient = {}
     for (const entry of day.entries) {
+      if (!byClient[entry.client]) {
+        byClient[entry.client] = { client: entry.client, notes: [], mins: 0, anyKnown: false, anyUnknown: false }
+        groups.push(byClient[entry.client])
+      }
+      const g    = byClient[entry.client]
       const mins = parseMins(entry.time)
-      if (mins !== null) knownMins += mins
-      else hasUnknown = true
-
-      md += `| ${entry.client} | ${entry.note} | ${entry.time ?? '?'} |\n`
+      if (entry.note && !g.notes.includes(entry.note)) g.notes.push(entry.note)
+      if (mins !== null) { g.mins += mins; g.anyKnown = true; knownMins += mins }
+      else { g.anyUnknown = true; hasUnknown = true }
       addTotal(entry.client, mins)
+    }
+
+    for (const g of groups) {
+      const note = g.notes.join(' & ')
+      const time = !g.anyKnown  ? '?'
+                 : g.anyUnknown ? `${fmtMins(g.mins)}+`
+                 : fmtMins(g.mins)
+      md += `| ${g.client} | ${note} | ${time} |\n`
     }
 
     const remaining = WORK_HOURS * 60 - knownMins
