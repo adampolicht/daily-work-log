@@ -253,3 +253,186 @@ body {
 }
 #btn-save:hover  { background: #0062cc; }
 #btn-save:active { transform: scale(0.97); }
+
+/* ── Views ────────────────────────────────────────────────────────────────── */
+.view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.view.hidden { display: none; }
+
+/* ── Back button (note toolbar) ───────────────────────────────────────────── */
+#btn-back {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  padding: 4px 8px 4px 4px;
+  margin-right: 8px;
+  border-radius: 5px;
+  line-height: 1;
+  transition: background 0.12s, color 0.12s;
+}
+#btn-back:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* ── Calendar toolbar ─────────────────────────────────────────────────────── */
+.cal-title {
+  -webkit-app-region: no-drag;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  min-width: 128px;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.cal-nav {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: rgba(255,255,255,0.5);
+  padding: 0 8px;
+  border-radius: 5px;
+  line-height: 1;
+  transition: background 0.12s, color 0.12s;
+}
+.cal-nav:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+#cal-folder {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 17px;
+  color: rgba(255,255,255,0.55);
+  padding: 4px 6px;
+  border-radius: 5px;
+  line-height: 1;
+  transition: background 0.12s;
+}
+#cal-folder:hover { background: rgba(255,255,255,0.12); }
+
+#cal-close {
+  background: #007AFF;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+#cal-close:hover  { background: #0062cc; }
+#cal-close:active { transform: scale(0.97); }
+
+/* ── Weekday header ───────────────────────────────────────────────────────── */
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 2px 14px 6px;
+  flex-shrink: 0;
+}
+.cal-weekdays span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  text-align: center;
+}
+
+/* ── Month grid ───────────────────────────────────────────────────────────── */
+.cal-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  padding: 0 14px 16px;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.cal-cell { min-height: 76px; }
+.cal-cell.blank { visibility: hidden; }
+
+.cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 5px 6px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cal-day:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.18); }
+
+.cal-day.empty { opacity: 0.5; }
+.cal-day.filled { background: rgba(0,122,255,0.07); border-color: rgba(0,122,255,0.22); }
+.cal-day.filled:hover { background: rgba(0,122,255,0.14); }
+
+.cal-day.today { border-color: #007AFF; box-shadow: 0 0 0 1px #007AFF inset; }
+
+.cal-daynum {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+}
+.cal-day.today .cal-daynum { color: #4da3ff; }
+
+.cal-check {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  font-size: 10px;
+  color: #27ae60;
+}
+
+.cal-hours {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+
+.cal-clients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: auto;
+  width: 100%;
+}
+
+.cal-chip {
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-chip.more {
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  padding: 1px 2px;
+}

@@ -4,6 +4,7 @@ const fs   = require('fs')
 const os   = require('os')
 const { getActivity, recordFigmaSessions } = require('./activity')
 const { generateWeeklySummary, weeklyPathFor } = require('./weekly')
+const { listMonth, parseMonth } = require('./days')
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const POPUP_HOUR    = 16
@@ -31,13 +32,13 @@ function ensureNotesDir() {
 }
 
 // ── Window ───────────────────────────────────────────────────────────────────
-function createWindow() {
-  if (win) {
-    win.show()
-    win.focus()
-    return
-  }
+// Tell the renderer which view to show. `date` is always today so the note view
+// lands on the current day even if the window was opened days ago.
+function sendNav(view) {
+  win.webContents.send('navigate', { view, date: todayKey() })
+}
 
+function createWindow(view) {
   win = new BrowserWindow({
     width:           700,
     height:          480,
@@ -54,6 +55,7 @@ function createWindow() {
 
   win.loadFile('index.html')
   win.setAlwaysOnTop(true, 'floating')
+  win.webContents.once('did-finish-load', () => sendNav(view))
 
   win.on('close', e => {
     // hide instead of destroy so next popup reuses the window
@@ -64,11 +66,12 @@ function createWindow() {
   win.on('closed', () => { win = null })
 }
 
-function showWindow() {
-  if (!win) createWindow()
+// view: 'calendar' (dashboard, default landing) or 'note' (today's entry)
+function showWindow(view = 'calendar') {
+  if (!win) createWindow(view)
   else {
     win.show()
-    win.webContents.send('refresh')
+    sendNav(view)
   }
   win.focus()
 }
@@ -113,7 +116,8 @@ function buildTray() {
   tray.setToolTip('Daily Work Log')
 
   const menu = Menu.buildFromTemplate([
-    { label: "Open today's note",  click: showWindow },
+    { label: 'Open calendar',      click: () => showWindow('calendar') },
+    { label: "Open today's note",  click: () => showWindow('note') },
     { type: 'separator' },
     { label: 'Generate weekly summary', click: runWeeklySummary },
     { type: 'separator' },
@@ -122,7 +126,7 @@ function buildTray() {
     { label: 'Quit', click: () => { app.quit() } },
   ])
   tray.setContextMenu(menu)
-  tray.on('click', showWindow)
+  tray.on('click', () => showWindow('calendar'))
 }
 
 // ── Scheduler ────────────────────────────────────────────────────────────────
@@ -148,8 +152,8 @@ function schedulePopup() {
   console.log(`Next popup in ${mins} min`)
 
   setTimeout(() => {
-    showWindow()
-    schedulePopup()   // reschedule for the following day
+    showWindow('note')   // daily nudge lands straight on today's entry
+    schedulePopup()      // reschedule for the following day
   }, delay)
 }
 
@@ -216,6 +220,18 @@ ipcMain.handle('hide-window', () => {
 ipcMain.handle('get-activity', () => {
   try { return getActivity() }
   catch (e) { return { apps: [], domains: [], error: e.message } }
+})
+
+// Calendar: instant listing (cache + local parse), no network.
+ipcMain.handle('list-month', (_e, year, month) => {
+  try { return listMonth(year, month) }
+  catch { return [] }
+})
+
+// Calendar: LLM-normalize uncached days, then return the refreshed month.
+ipcMain.handle('parse-month', async (_e, year, month) => {
+  try { return await parseMonth(year, month) }
+  catch { return listMonth(year, month) }
 })
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────

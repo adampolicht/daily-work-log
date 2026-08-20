@@ -239,13 +239,28 @@ function renderMarkdown(data, dates, year, week, rawNotes) {
   return md
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
-async function generateWeeklySummary(targetDate = new Date()) {
-  const env = {
+// Resolve API keys from process env + .env file (production or dev location).
+function resolveEnv() {
+  return {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GROQ_API_KEY:   process.env.GROQ_API_KEY,
     ...loadEnv(),
   }
+}
+
+// Run the LLM parse on a set of { date, content } notes and return structured
+// data: { days: [{ date, entries: [{ client, note, time }] }] }. Shared by the
+// weekly report and the calendar's per-day cache.
+async function parseNotesLLM(notes, env = resolveEnv()) {
+  const raw = await callLLM(env, buildPrompt(notes))
+  // Strip markdown code fences if Gemini wraps the JSON
+  const jsonStr = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+  return JSON.parse(jsonStr)
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+async function generateWeeklySummary(targetDate = new Date()) {
+  const env = resolveEnv()
 
   const dates = weekDates(targetDate)
   const notes = dates
@@ -257,11 +272,7 @@ async function generateWeeklySummary(targetDate = new Date()) {
 
   if (!notes.length) throw new Error('No notes found for this week.')
 
-  const raw = await callLLM(env, buildPrompt(notes))
-
-  // Strip markdown code fences if Gemini wraps the JSON
-  const jsonStr = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
-  const data    = JSON.parse(jsonStr)
+  const data = await parseNotesLLM(notes, env)
 
   const week = isoWeek(targetDate)
   const year = targetDate.getFullYear()
@@ -282,4 +293,4 @@ function weeklyPathFor(targetDate = new Date()) {
   return path.join(WEEKLY_DIR, `${year}-W${String(week).padStart(2, '0')}.md`)
 }
 
-module.exports = { generateWeeklySummary, weeklyPathFor }
+module.exports = { generateWeeklySummary, weeklyPathFor, parseNotesLLM, resolveEnv, parseMins, fmtMins }

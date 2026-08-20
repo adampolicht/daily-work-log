@@ -22,14 +22,42 @@ function formatDate(key) {
 let currentKey = todayKey()
 let saveTimer  = null
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-async function init() {
+// ── View switching ────────────────────────────────────────────────────────────
+const viewCalendar = document.getElementById('view-calendar')
+const viewNote     = document.getElementById('view-note')
+
+function showView(name) {
+  viewCalendar.classList.toggle('hidden', name !== 'calendar')
+  viewNote.classList.toggle('hidden', name !== 'note')
+}
+
+function showCalendar() {
+  showView('calendar')
+  window.renderCalendar()   // re-lists notes so edits show immediately
+}
+
+// ── Open a day's note ─────────────────────────────────────────────────────────
+async function openNote(key = todayKey()) {
+  currentKey = key
   dateLabel.textContent = formatDate(currentKey)
   const text = await window.worklog.loadNote(currentKey)
   note.value = text
+  showView('note')
   note.focus()
   note.setSelectionRange(note.value.length, note.value.length)
+
+  // Activity sidebar only makes sense for today (Screen Time is today-scoped).
+  const isToday = currentKey === todayKey()
+  btnToggleSidebar.style.display = isToday ? '' : 'none'
+  if (isToday) {
+    setCollapsed(localStorage.getItem('activityCollapsed') === '1')
+    loadActivity()
+  } else {
+    panel.classList.add('collapsed')
+  }
 }
+
+window.openNote = openNote
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function save() {
@@ -47,10 +75,10 @@ function flashStatus(msg) {
   }, 2000)
 }
 
-// ── Save & Close ──────────────────────────────────────────────────────────────
-async function saveAndClose() {
+// ── Save & return to calendar ─────────────────────────────────────────────────
+async function saveAndReturn() {
   await save()
-  window.worklog.hide()
+  showCalendar()
 }
 
 // ── Auto-save on input (debounced) ────────────────────────────────────────────
@@ -65,25 +93,24 @@ note.addEventListener('input', () => {
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', async e => {
-  const cmd = e.metaKey || e.ctrlKey
+  const cmd    = e.metaKey || e.ctrlKey
+  const inNote = !viewNote.classList.contains('hidden')
 
-  if (cmd && e.key === 's') {
+  if (cmd && e.key === 's') {           // save, stay on the note
     e.preventDefault()
-    await save()
+    if (inNote) await save()
+    return
   }
 
-  if (cmd && e.key === 'w') {
+  if (e.key === 'Escape' || (cmd && e.key === 'w')) {
     e.preventDefault()
-    await saveAndClose()
-  }
-
-  if (e.key === 'Escape') {
-    await saveAndClose()
+    if (inNote) await saveAndReturn()   // note → save + back to calendar
+    else window.worklog.hide()          // calendar → close the window
   }
 })
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
-btnSave.addEventListener('click', saveAndClose)
+btnSave.addEventListener('click', saveAndReturn)
 btnFolder.addEventListener('click', () => window.worklog.openFolder())
 
 // ── Activity sidebar collapse ─────────────────────────────────────────────────
@@ -173,13 +200,11 @@ async function loadActivity() {
   }
 }
 
-// ── Refresh on reopen (date may have changed since last open) ─────────────────
-window.worklog.onRefresh(() => {
-  currentKey = todayKey()
-  init()
-  loadActivity()
-})
+// ── Navigation ────────────────────────────────────────────────────────────────
+document.getElementById('btn-back').addEventListener('click', saveAndReturn)
 
-// ── Start ─────────────────────────────────────────────────────────────────────
-init()
-loadActivity()
+// Main process tells us which view to show (calendar on open, note at 16:45).
+window.worklog.onNavigate(({ view, date }) => {
+  if (view === 'note') openNote(date)
+  else { window.resetCalendarToToday(); showCalendar() }
+})

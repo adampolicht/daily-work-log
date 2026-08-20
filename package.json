@@ -20,6 +20,8 @@
       "activity.js",
       "app.js",
       "weekly.js",
+      "days.js",
+      "calendar.js",
       "index.html",
       "style.css",
       "blocklist.json"
