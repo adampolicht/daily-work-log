@@ -66,13 +66,20 @@ function getAppUsage(blocklist) {
     .filter(r => r.mins > 0 && !blocklist.apps.includes(r.bundleId))
 }
 
-function getBrowserDomains(blocklist) {
+// Copy Opera's live History DB to tmp once per refresh (it's locked while Opera
+// runs, so we read a snapshot). Returns the temp path, or null if unavailable.
+function copyOperaHistory() {
   const tmp = path.join(os.tmpdir(), 'worklog_opera_history.db')
   try {
     fs.copyFileSync(OPERA_HISTORY, tmp)
+    return tmp
   } catch {
-    return []
+    return null
   }
+}
+
+function getBrowserDomains(blocklist, operaDb) {
+  if (!operaDb) return []
 
   const today = todayLocal()
   const sql = `
@@ -96,7 +103,7 @@ function getBrowserDomains(blocklist) {
     LIMIT 60;
   `
 
-  const rows = sqlite(tmp, sql)
+  const rows = sqlite(operaDb, sql)
   const seen = new Set()
 
   return rows
@@ -186,7 +193,7 @@ function recordFigmaSessions() {
   fs.writeFileSync(FIGMA_LOG, JSON.stringify(log, null, 2), 'utf8')
 }
 
-function getFigmaProjects() {
+function getFigmaProjects(operaDb) {
   const today = todayLocal()
   const map = new Map()
 
@@ -211,15 +218,13 @@ function getFigmaProjects() {
   }
 
   // browser history fallback for figma.com opened in browser
-  const tmp = path.join(os.tmpdir(), 'worklog_opera_figma.db')
-  try {
-    fs.copyFileSync(OPERA_HISTORY, tmp)
+  if (operaDb) {
     const sql = `
       SELECT DISTINCT url FROM urls
       WHERE (url LIKE '%figma.com/design/%' OR url LIKE '%figma.com/file/%')
         AND date(last_visit_time/1000000 - 11644473600, 'unixepoch', 'localtime') >= date('now', 'localtime', '-1 day')
       ORDER BY last_visit_time DESC LIMIT 30;`
-    const rows = sqlite(tmp, sql)
+    const rows = sqlite(operaDb, sql)
     for (const url of rows) {
       const m = url.match(/figma\.com\/(?:design|file)\/[A-Za-z0-9_-]+\/([^"?&#\s]{2,80})/)
       if (m) {
@@ -227,7 +232,7 @@ function getFigmaProjects() {
         if (!map.has(name)) map.set(name, 0)
       }
     }
-  } catch {}
+  }
 
   return [...map.entries()]
     .map(([title, mins]) => ({ title, mins }))
@@ -236,10 +241,11 @@ function getFigmaProjects() {
 
 function getActivity() {
   const blocklist = loadBlocklist()
+  const operaDb   = copyOperaHistory()   // single snapshot shared by both readers
   return {
     apps:    getAppUsage(blocklist),
-    domains: getBrowserDomains(blocklist),
-    figma:   getFigmaProjects(),
+    domains: getBrowserDomains(blocklist, operaDb),
+    figma:   getFigmaProjects(operaDb),
   }
 }
 

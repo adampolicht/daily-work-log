@@ -8,8 +8,7 @@ const statusEl  = document.getElementById('save-status')
 
 // ── Date key ──────────────────────────────────────────────────────────────────
 function todayKey() {
-  const d = new Date()
-  return d.toISOString().slice(0, 10)
+  return new Date().toLocaleDateString('en-CA')   // local "YYYY-MM-DD"
 }
 
 function formatDate(key) {
@@ -60,8 +59,7 @@ note.addEventListener('input', () => {
   clearTimeout(autoTimer)
   autoTimer = setTimeout(async () => {
     await window.worklog.saveNote(currentKey, note.value)
-    statusEl.textContent = 'Auto-saved'
-    setTimeout(() => { statusEl.textContent = '' }, 1200)
+    flashStatus('Auto-saved')
   }, 2000)
 })
 
@@ -76,13 +74,11 @@ document.addEventListener('keydown', async e => {
 
   if (cmd && e.key === 'w') {
     e.preventDefault()
-    await save()
-    window.worklog.hide()
+    await saveAndClose()
   }
 
   if (e.key === 'Escape') {
-    await save()
-    window.worklog.hide()
+    await saveAndClose()
   }
 })
 

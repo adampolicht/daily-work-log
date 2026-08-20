@@ -19,7 +19,7 @@ let tray = null
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function todayKey() {
-  return new Date().toISOString().slice(0, 10)   // "YYYY-MM-DD"
+  return new Date().toLocaleDateString('en-CA')   // local "YYYY-MM-DD"
 }
 
 function notePath(key = todayKey()) {
