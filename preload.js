@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('worklog', {
   getActivity: ()             => ipcRenderer.invoke('get-activity'),
   listMonth:   (year, month)  => ipcRenderer.invoke('list-month', year, month),
   parseMonth:  (year, month)  => ipcRenderer.invoke('parse-month', year, month),
+  openWeekly:  date           => ipcRenderer.invoke('open-weekly', date),
   onNavigate:  cb             => ipcRenderer.on('navigate', (_e, payload) => cb(payload)),
 })

@@ -234,6 +234,12 @@ ipcMain.handle('parse-month', async (_e, year, month) => {
   catch { return listMonth(year, month) }
 })
 
+// Calendar: open the weekly summary for the week containing the given date.
+ipcMain.handle('open-weekly', (_e, date) => {
+  const p = weeklyPathFor(new Date(date + 'T12:00:00'))
+  if (fs.existsSync(p)) shell.openPath(p)
+})
+
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   nativeTheme.themeSource = 'dark'

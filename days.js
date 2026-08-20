@@ -9,7 +9,7 @@ const fs     = require('fs')
 const path   = require('path')
 const os     = require('os')
 const crypto = require('crypto')
-const { parseNotesLLM, resolveEnv, parseMins } = require('./weekly')
+const { parseNotesLLM, resolveEnv, parseMins, weeklyPathFor } = require('./weekly')
 
 const NOTES_DIR  = path.join(os.homedir(), 'Documents', 'WorkLog')
 const CACHE_PATH = path.join(NOTES_DIR, '.parsed.json')
@@ -87,12 +87,30 @@ function listMonth(year, month) {
     const date = `${year}-${pad(month)}-${pad(d)}`
     const text = readDay(date).trim()
 
-    if (!text) { out.push({ date, filled: false }); continue }
+    let entry
+    if (!text) {
+      entry = { date, filled: false }
+    } else {
+      const h      = hash(text)
+      const cached = cache[date]
+      entry = (cached && cached.hash === h)
+        ? { date, filled: true, ...cached }
+        : { date, filled: true, hash: h, ...parseLocal(text) }
+    }
 
-    const h      = hash(text)
-    const cached = cache[date]
-    if (cached && cached.hash === h) out.push({ date, filled: true, ...cached })
-    else out.push({ date, filled: true, hash: h, ...parseLocal(text) })
+    // Saturday: if the week's summary has been generated, mark the tile so it
+    // opens the report instead of a day note.
+    const dayDate = new Date(year, month - 1, d)
+    if (dayDate.getDay() === 6) {
+      const wp = weeklyPathFor(dayDate)
+      if (fs.existsSync(wp)) {
+        entry.weekly = true
+        const m = path.basename(wp).match(/W(\d+)/)
+        if (m) entry.week = Number(m[1])
+      }
+    }
+
+    out.push(entry)
   }
 
   return out

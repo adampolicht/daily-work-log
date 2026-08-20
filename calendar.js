@@ -64,6 +64,19 @@ function paintGrid(days) {
   for (const day of days) {
     const dayNum   = Number(day.date.slice(-2))
     const isToday  = day.date === todayKey
+
+    // Saturday with a generated weekly report → distinct summary tile
+    if (day.weekly) {
+      const cls = ['cal-cell', 'cal-day', 'weekly']
+      if (isToday) cls.push('today')
+      let inner = `<span class="cal-daynum">${dayNum}</span>`
+      inner += `<span class="cal-summary">∑</span>`
+      inner += `<span class="cal-hours">Summary</span>`
+      if (day.week) inner += `<div class="cal-clients"><span class="cal-chip week">Week ${day.week}</span></div>`
+      html += `<button class="${cls.join(' ')}" data-date="${day.date}" data-weekly="1">${inner}</button>`
+      continue
+    }
+
     const classes  = ['cal-cell', 'cal-day']
     if (day.filled) classes.push('filled'); else classes.push('empty')
     if (isToday) classes.push('today')
@@ -105,7 +118,9 @@ document.getElementById('cal-close').addEventListener('click', () => window.work
 // Tile click → open that day's note (defined in app.js)
 calGrid.addEventListener('click', e => {
   const tile = e.target.closest('.cal-day')
-  if (tile && window.openNote) window.openNote(tile.dataset.date)
+  if (!tile) return
+  if (tile.dataset.weekly) window.worklog.openWeekly(tile.dataset.date)
+  else if (window.openNote) window.openNote(tile.dataset.date)
 })
 
 // Re-sync to the current month whenever the calendar is shown afresh.

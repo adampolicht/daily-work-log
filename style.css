@@ -436,3 +436,27 @@ body {
   color: rgba(255,255,255,0.4);
   padding: 1px 2px;
 }
+
+/* ── Weekly-summary tile (Saturdays) ──────────────────────────────────────── */
+.cal-day.weekly {
+  background: rgba(245,166,35,0.09);
+  border-color: rgba(245,166,35,0.3);
+}
+.cal-day.weekly:hover { background: rgba(245,166,35,0.16); border-color: rgba(245,166,35,0.45); }
+
+.cal-summary {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: #f5a623;
+}
+
+.cal-day.weekly .cal-hours { color: #f5c477; }
+
+.cal-chip.week {
+  background: rgba(245,166,35,0.18);
+  color: #f5c477;
+}
