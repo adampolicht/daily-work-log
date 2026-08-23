@@ -8,6 +8,33 @@ const WEEKLY_DIR  = path.join(NOTES_DIR, 'weekly')
 const WORK_HOURS  = 8
 const DAY_NAMES   = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+// A note starting with one of these means a non-working day: no report, no
+// hours, excluded from totals. Detected deterministically (no LLM) since the
+// phrasing is short and unambiguous.
+const DAY_OFF_RE  = /^(day off|urlop|wolne|off|pto|l4|chory|sick|holiday)\b/i
+// Deterministic client-name canonicalization applied after the LLM parse. The
+// prompt asks the model to normalize names, but it does so inconsistently
+// between runs (e.g. "APTEOS" vs "ApteOS", "Memory" vs "Memory²"), which splits
+// one project into duplicate rows. This map is the source of truth. Keys are
+// lowercased. Note: the "Memory² · Internal" fill bucket is intentionally NOT
+// listed, so it stays separate from client "Memory²".
+const CLIENT_ALIASES = {
+  apteos:  'ApteOS',
+  celler:  'Cellier',
+  cellier: 'Cellier',
+  noba:    'NOBA',
+  m2:      'Memory²',
+  memory2: 'Memory²',
+  memory:  'Memory²',
+  'memory²': 'Memory²',
+}
+function normalizeClient(name) {
+  const key = String(name).trim().toLowerCase()
+  return CLIENT_ALIASES[key] || String(name).trim()
+}
+function isDayOff(content) {
+  return DAY_OFF_RE.test(String(content).trim())
+}
 
 // ── Env ──────────────────────────────────────────────────────────────────────
 function loadEnv() {
@@ -172,14 +199,29 @@ function renderMarkdown(data, dates, year, week, rawNotes) {
 
   let md = `# Week ${week} · ${fmtDate(dates[0])}–${fmtDate(dates[4])}, ${year}\n\n`
 
-  for (const day of data.days) {
-    const idx = dates.indexOf(day.date)
-    if (idx === -1) continue
+  let daysOff = 0
 
-    md += `## ${DAY_NAMES[idx]} · ${fmtDate(day.date)}\n\n`
+  // Index parsed data by date. Day-off days are detected from the raw notes
+  // (see generateWeeklySummary), never sent to the LLM, so they won't appear in
+  // data.days — that's why we iterate over the week's dates, not data.days.
+  const dataByDate = Object.fromEntries((data.days || []).map(d => [d.date, d]))
 
-    const raw = rawByDate[day.date]
-    if (raw) md += `> ${raw.split('\n').join('\n> ')}\n\n`
+  for (let idx = 0; idx < dates.length; idx++) {
+    const date = dates[idx]
+    const raw  = rawByDate[date]
+    if (!raw) continue   // no note logged that day
+
+    md += `## ${DAY_NAMES[idx]} · ${fmtDate(date)}\n\n`
+    md += `> ${raw.split('\n').join('\n> ')}\n\n`
+
+    // Non-working day: render the note as-is, skip the table and the 8h
+    // Internal fill so it doesn't inflate the weekly totals.
+    if (isDayOff(raw)) {
+      daysOff++
+      continue
+    }
+
+    const day = dataByDate[date] || { entries: [] }
 
     md += `| Client | Note | Time |\n`
     md += `|--------|------|------|\n`
@@ -192,16 +234,17 @@ function renderMarkdown(data, dates, year, week, rawNotes) {
     const groups   = []   // preserves first-seen client order
     const byClient = {}
     for (const entry of day.entries) {
-      if (!byClient[entry.client]) {
-        byClient[entry.client] = { client: entry.client, notes: [], mins: 0, anyKnown: false, anyUnknown: false }
-        groups.push(byClient[entry.client])
+      const client = normalizeClient(entry.client)
+      if (!byClient[client]) {
+        byClient[client] = { client, notes: [], mins: 0, anyKnown: false, anyUnknown: false }
+        groups.push(byClient[client])
       }
-      const g    = byClient[entry.client]
+      const g    = byClient[client]
       const mins = parseMins(entry.time)
       if (entry.note && !g.notes.includes(entry.note)) g.notes.push(entry.note)
       if (mins !== null) { g.mins += mins; g.anyKnown = true; knownMins += mins }
       else { g.anyUnknown = true; hasUnknown = true }
-      addTotal(entry.client, mins)
+      addTotal(client, mins)
     }
 
     for (const g of groups) {
@@ -235,6 +278,8 @@ function renderMarkdown(data, dates, year, week, rawNotes) {
       : fmtMins(t.mins)
     md += `| ${client} | ${label} |\n`
   }
+
+  if (daysOff) md += `\n_Days off: ${daysOff}_\n`
 
   return md
 }
@@ -272,7 +317,11 @@ async function generateWeeklySummary(targetDate = new Date()) {
 
   if (!notes.length) throw new Error('No notes found for this week.')
 
-  const data = await parseNotesLLM(notes, env)
+  // Day-off notes are handled deterministically by the renderer — keep them out
+  // of the LLM call so the model can't drop the day or invent hours. If every
+  // note is a day off, skip the LLM entirely.
+  const workNotes = notes.filter(n => !isDayOff(n.content))
+  const data = workNotes.length ? await parseNotesLLM(workNotes, env) : { days: [] }
 
   const week = isoWeek(targetDate)
   const year = targetDate.getFullYear()
