@@ -27,6 +27,7 @@ const CLIENT_ALIASES = {
   memory2: 'Memory²',
   memory:  'Memory²',
   'memory²': 'Memory²',
+  gradu8:  'gradu8',
 }
 function normalizeClient(name) {
   const key = String(name).trim().toLowerCase()
