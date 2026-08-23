@@ -163,8 +163,10 @@ function buildPrompt(notes) {
 For each day, extract all work entries. Each entry has a client name and a description.
 
 Rules:
+- The client is the name at the START of a line, before the FIRST colon. Everything after that first colon is the description for that client, even if it contains further colons. Example: "Spread: Klaviyo & Share: template ideas" is ONE entry — client "Spread", note "Klaviyo & Share template ideas" — NOT a separate "Share" client.
+- A colon, capitalized word, or product name INSIDE a description is a feature/product/task, never a client. Known feature/product names that must NEVER become clients: "Share", "Klaviyo", "Cheat Code". Fold them into the surrounding client's description.
 - Normalize client names — fix typos, resolve abbreviations to the full canonical form. Example mappings: "Celler" → "Cellier", "M2" → "Memory²", "Memory2" → "Memory²", "Noba" → "NOBA"
-- If a new client name appears that you haven't seen before, include it as-is (do not drop it)
+- If a genuinely new client name appears at the start of a line (before its first colon) that you haven't seen before, include it as-is (do not drop it)
 - Translate all descriptions to concise, professional English
 - When a description covers several distinct tasks, separate them with " & " rather than commas or the word "and" (e.g. "Promo codes & AB social media templates & status meeting")
 - If an explicit time is written (e.g. "3h", "45min", "(1h)"), extract it as-is
