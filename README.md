@@ -47,8 +47,8 @@ Memory Squared: internal tooling (1h)
 - Produces a per-day breakdown plus **weekly totals per client**, saved to `~/Documents/WorkLog/weekly/YYYY-Wxx.md`
 - Uses Groq (`openai/gpt-oss-120b`) to normalize free-form notes into structured client/hours, with Google Gemini (`gemini-2.0-flash-lite`) as a fallback
 - **Day-off aware**: notes starting with `day off`, `urlop`, `wolne`, `pto`, `l4`, `sick`, `holiday` etc. are detected deterministically (no LLM), get no hours and are excluded from totals
-- **Client-name canonicalization**: a fixed alias map merges inconsistent spellings (e.g. `APTEOS`/`ApteOS`, `memory`/`m2`/`Memory²`) into the canonical `Memory Squared` so one project never splits into duplicate rows
-- Assumes an 8h workday; time not attributed to a client on a working day is rolled into a `Memory Squared · Internal` bucket
+- **Client-name canonicalization**: a fixed alias map merges inconsistent spellings (e.g. `APTEOS`/`ApteOS`, `memory`/`m2`/`Memory²`) into one canonical name so a project never splits into duplicate rows
+- Assumes an 8h workday; time not attributed to a client on a working day is rolled into an internal **company** bucket (`<COMPANY> · Internal`) – see [Configure your company](#configure-your-company)
 
 ### Activity sidebar
 Toggled from the toolbar (state persists between sessions), it reconstructs where your day actually went:
@@ -87,6 +87,22 @@ GEMINI_API_KEY=...        # optional fallback
 ```
 
 Without a key the app still runs: daily notes work fully and the calendar falls back to the instant local parser.
+
+### Configure your company
+
+The tool treats **your own company** as the bucket for all non-client (internal) work: quarterly meetings, internal tooling, unattributed hours, and so on. This name is defined once at the top of `weekly.js`:
+
+```js
+const COMPANY = 'Memory Squared'                       // canonical company name
+const COMPANY_ALIASES = ['m2', 'memory2', 'memory', 'memory²']  // shorthands you type in notes
+```
+
+Everything downstream derives from these two values:
+
+- **`COMPANY`** – the canonical name shown in reports and the calendar, and the label of the `<COMPANY> · Internal` fill bucket for unattributed working hours.
+- **`COMPANY_ALIASES`** – lowercased shorthands that get folded into `COMPANY` (so typing `M2:` or `Memory:` in a note still lands on the same row). `COMPANY` itself is always recognized, so it need not be repeated here.
+
+If you switch companies, change `COMPANY` (and optionally `COMPANY_ALIASES` to match how you'll abbreviate it) – nothing else needs editing. Run `npm run deploy` afterwards so the installed app picks it up.
 
 ### Grant Full Disk Access (one-time)
 
