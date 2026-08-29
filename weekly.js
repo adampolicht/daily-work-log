@@ -14,19 +14,20 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 const DAY_OFF_RE  = /^(day off|urlop|wolne|off|pto|l4|chory|sick|holiday)\b/i
 // Deterministic client-name canonicalization applied after the LLM parse. The
 // prompt asks the model to normalize names, but it does so inconsistently
-// between runs (e.g. "APTEOS" vs "ApteOS", "Memory" vs "Memory²"), which splits
-// one project into duplicate rows. This map is the source of truth. Keys are
-// lowercased. Note: the "Memory² · Internal" fill bucket is intentionally NOT
-// listed, so it stays separate from client "Memory²".
+// between runs (e.g. "APTEOS" vs "ApteOS", "Memory" vs "Memory Squared"), which
+// splits one project into duplicate rows. This map is the source of truth. Keys
+// are lowercased. Note: the "Memory Squared · Internal" fill bucket is
+// intentionally NOT listed, so it stays separate from client "Memory Squared".
 const CLIENT_ALIASES = {
   apteos:  'ApteOS',
   celler:  'Cellier',
   cellier: 'Cellier',
   noba:    'NOBA',
-  m2:      'Memory²',
-  memory2: 'Memory²',
-  memory:  'Memory²',
-  'memory²': 'Memory²',
+  m2:               'Memory Squared',
+  memory2:          'Memory Squared',
+  memory:           'Memory Squared',
+  'memory²':        'Memory Squared',
+  'memory squared': 'Memory Squared',
   gradu8:  'gradu8',
 }
 function normalizeClient(name) {
@@ -165,7 +166,7 @@ For each day, extract all work entries. Each entry has a client name and a descr
 Rules:
 - The client is the name at the START of a line, before the FIRST colon. Everything after that first colon is the description for that client, even if it contains further colons. Example: "Spread: Klaviyo & Share: template ideas" is ONE entry — client "Spread", note "Klaviyo & Share template ideas" — NOT a separate "Share" client.
 - A colon, capitalized word, or product name INSIDE a description is a feature/product/task, never a client. Known feature/product names that must NEVER become clients: "Share", "Klaviyo", "Cheat Code". Fold them into the surrounding client's description.
-- Normalize client names — fix typos, resolve abbreviations to the full canonical form. Example mappings: "Celler" → "Cellier", "M2" → "Memory²", "Memory2" → "Memory²", "Noba" → "NOBA"
+- Normalize client names — fix typos, resolve abbreviations to the full canonical form. Example mappings: "Celler" → "Cellier", "M2" → "Memory Squared", "Memory2" → "Memory Squared", "Memory²" → "Memory Squared", "Noba" → "NOBA"
 - If a genuinely new client name appears at the start of a line (before its first colon) that you haven't seen before, include it as-is (do not drop it)
 - Translate all descriptions to concise, professional English
 - When a description covers several distinct tasks, separate them with " & " rather than commas or the word "and" (e.g. "Promo codes & AB social media templates & status meeting")
@@ -261,11 +262,11 @@ function renderMarkdown(data, dates, year, week, rawNotes) {
     const remaining = WORK_HOURS * 60 - knownMins
 
     if (!hasUnknown && remaining > 0) {
-      md += `| Memory² · Internal | — | ${fmtMins(remaining)} |\n`
-      addTotal('Memory² · Internal', remaining)
+      md += `| Memory Squared · Internal | — | ${fmtMins(remaining)} |\n`
+      addTotal('Memory Squared · Internal', remaining)
     } else {
-      md += `| Memory² · Internal | — | ? |\n`
-      addTotal('Memory² · Internal', null)
+      md += `| Memory Squared · Internal | — | ? |\n`
+      addTotal('Memory Squared · Internal', null)
     }
 
     md += `\n`
@@ -345,4 +346,4 @@ function weeklyPathFor(targetDate = new Date()) {
   return path.join(WEEKLY_DIR, `${year}-W${String(week).padStart(2, '0')}.md`)
 }
 
-module.exports = { generateWeeklySummary, weeklyPathFor, parseNotesLLM, resolveEnv, parseMins, fmtMins }
+module.exports = { generateWeeklySummary, weeklyPathFor, parseNotesLLM, resolveEnv, parseMins, fmtMins, normalizeClient }

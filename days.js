@@ -9,7 +9,7 @@ const fs     = require('fs')
 const path   = require('path')
 const os     = require('os')
 const crypto = require('crypto')
-const { parseNotesLLM, resolveEnv, parseMins, weeklyPathFor } = require('./weekly')
+const { parseNotesLLM, resolveEnv, parseMins, weeklyPathFor, normalizeClient } = require('./weekly')
 
 const NOTES_DIR  = path.join(os.homedir(), 'Documents', 'WorkLog')
 const CACHE_PATH = path.join(NOTES_DIR, '.parsed.json')
@@ -45,7 +45,7 @@ function parseLocal(text) {
     if (!line) continue
 
     const colon = line.indexOf(':')
-    const client = colon > 0 && colon <= 30 ? line.slice(0, colon).trim() : '—'
+    const client = colon > 0 && colon <= 30 ? normalizeClient(line.slice(0, colon).trim()) : '—'
     const mins   = parseMins(line) || 0
 
     totalMins += mins
@@ -63,7 +63,8 @@ function summarizeLLMDay(entries) {
   for (const e of entries) {
     const mins = parseMins(e.time) || 0
     totalMins += mins
-    byClient.set(e.client, (byClient.get(e.client) || 0) + mins)
+    const client = normalizeClient(e.client)
+    byClient.set(client, (byClient.get(client) || 0) + mins)
   }
 
   return { source: 'llm', totalMins, clients: clientsFrom(byClient) }

@@ -30,7 +30,7 @@ Notes follow a light `Client: what you did (Xh)` convention per line, which is w
 ```
 ApteOS: dashboard redesign, SARA module states (3h)
 Cellier: wine detail page in Figma (2h30)
-Memory²: internal tooling (1h)
+Memory Squared: internal tooling (1h)
 ```
 
 ### Calendar dashboard
@@ -47,8 +47,8 @@ Memory²: internal tooling (1h)
 - Produces a per-day breakdown plus **weekly totals per client**, saved to `~/Documents/WorkLog/weekly/YYYY-Wxx.md`
 - Uses Groq (`openai/gpt-oss-120b`) to normalize free-form notes into structured client/hours, with Google Gemini (`gemini-2.0-flash-lite`) as a fallback
 - **Day-off aware**: notes starting with `day off`, `urlop`, `wolne`, `pto`, `l4`, `sick`, `holiday` etc. are detected deterministically (no LLM), get no hours and are excluded from totals
-- **Client-name canonicalization**: a fixed alias map merges inconsistent spellings (e.g. `APTEOS`/`ApteOS`, `memory`/`m2`/`Memory²`) so one project never splits into duplicate rows
-- Assumes an 8h workday; time not attributed to a client on a working day is rolled into a `Memory² · Internal` bucket
+- **Client-name canonicalization**: a fixed alias map merges inconsistent spellings (e.g. `APTEOS`/`ApteOS`, `memory`/`m2`/`Memory²`) into the canonical `Memory Squared` so one project never splits into duplicate rows
+- Assumes an 8h workday; time not attributed to a client on a working day is rolled into a `Memory Squared · Internal` bucket
 
 ### Activity sidebar
 Toggled from the toolbar (state persists between sessions), it reconstructs where your day actually went:
