@@ -12,23 +12,31 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 // hours, excluded from totals. Detected deterministically (no LLM) since the
 // phrasing is short and unambiguous.
 const DAY_OFF_RE  = /^(day off|urlop|wolne|off|pto|l4|chory|sick|holiday)\b/i
+// Your own company: the bucket for all non-client (internal) work. Change this
+// one value if you move to a different company and the tool keeps working — the
+// alias map, the fill bucket, and the LLM prompt all derive from it below.
+const COMPANY = 'Memory Squared'
+// Alternate spellings / shorthands of COMPANY that should collapse into it.
+const COMPANY_ALIASES = ['m2', 'memory2', 'memory', 'memory²']
+// The fill bucket for unattributed hours on a working day (see WORK_HOURS).
+const COMPANY_INTERNAL = `${COMPANY} · Internal`
+
 // Deterministic client-name canonicalization applied after the LLM parse. The
 // prompt asks the model to normalize names, but it does so inconsistently
-// between runs (e.g. "APTEOS" vs "ApteOS", "Memory" vs "Memory Squared"), which
-// splits one project into duplicate rows. This map is the source of truth. Keys
-// are lowercased. Note: the "Memory Squared · Internal" fill bucket is
-// intentionally NOT listed, so it stays separate from client "Memory Squared".
+// between runs (e.g. "APTEOS" vs "ApteOS", "Memory" vs the canonical company),
+// which splits one project into duplicate rows. This map is the source of truth.
+// Keys are lowercased. Note: the COMPANY_INTERNAL fill bucket is intentionally
+// NOT listed, so it stays separate from the COMPANY client row.
 const CLIENT_ALIASES = {
   apteos:  'ApteOS',
   celler:  'Cellier',
   cellier: 'Cellier',
   noba:    'NOBA',
-  m2:               'Memory Squared',
-  memory2:          'Memory Squared',
-  memory:           'Memory Squared',
-  'memory²':        'Memory Squared',
-  'memory squared': 'Memory Squared',
   gradu8:  'gradu8',
+}
+// Fold COMPANY and each of its shorthands into the single canonical string.
+for (const alias of [COMPANY, ...COMPANY_ALIASES]) {
+  CLIENT_ALIASES[alias.toLowerCase()] = COMPANY
 }
 function normalizeClient(name) {
   const key = String(name).trim().toLowerCase()
@@ -166,7 +174,7 @@ For each day, extract all work entries. Each entry has a client name and a descr
 Rules:
 - The client is the name at the START of a line, before the FIRST colon. Everything after that first colon is the description for that client, even if it contains further colons. Example: "Spread: Klaviyo & Share: template ideas" is ONE entry — client "Spread", note "Klaviyo & Share template ideas" — NOT a separate "Share" client.
 - A colon, capitalized word, or product name INSIDE a description is a feature/product/task, never a client. Known feature/product names that must NEVER become clients: "Share", "Klaviyo", "Cheat Code". Fold them into the surrounding client's description.
-- Normalize client names — fix typos, resolve abbreviations to the full canonical form. Example mappings: "Celler" → "Cellier", "M2" → "Memory Squared", "Memory2" → "Memory Squared", "Memory²" → "Memory Squared", "Noba" → "NOBA"
+- Normalize client names — fix typos, resolve abbreviations to the full canonical form. Example mappings: "Celler" → "Cellier", ${COMPANY_ALIASES.map(a => `"${a}" → "${COMPANY}"`).join(', ')}, "Noba" → "NOBA"
 - If a genuinely new client name appears at the start of a line (before its first colon) that you haven't seen before, include it as-is (do not drop it)
 - Translate all descriptions to concise, professional English
 - When a description covers several distinct tasks, separate them with " & " rather than commas or the word "and" (e.g. "Promo codes & AB social media templates & status meeting")
@@ -262,11 +270,11 @@ function renderMarkdown(data, dates, year, week, rawNotes) {
     const remaining = WORK_HOURS * 60 - knownMins
 
     if (!hasUnknown && remaining > 0) {
-      md += `| Memory Squared · Internal | — | ${fmtMins(remaining)} |\n`
-      addTotal('Memory Squared · Internal', remaining)
+      md += `| ${COMPANY_INTERNAL} | — | ${fmtMins(remaining)} |\n`
+      addTotal(COMPANY_INTERNAL, remaining)
     } else {
-      md += `| Memory Squared · Internal | — | ? |\n`
-      addTotal('Memory Squared · Internal', null)
+      md += `| ${COMPANY_INTERNAL} | — | ? |\n`
+      addTotal(COMPANY_INTERNAL, null)
     }
 
     md += `\n`
